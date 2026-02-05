@@ -7,12 +7,11 @@
 class HoverController {
   constructor(options = {}) {
     this.hoverDelay = options.hoverDelay || 400; // ms
-    this.hideDelay = options.hideDelay || 200; // ms - delay before hiding after mouse leaves
+    this.inactivityThreshold = 150; // ms - if no mouse activity, assume left
     this.hoverTimeout = null;
-    this.hideTimeout = null;
     this.isHovering = false;
     this.isControlsVisible = false;
-    this.lastMousePosition = { x: 0, y: 0 };
+    this.lastActivityTime = 0;
     this.isMouseInWindow = false;
 
     // Callbacks
@@ -27,14 +26,14 @@ class HoverController {
   }
 
   init() {
-    // Track mouse movement
+    // Track mouse movement - this only fires when mouse is inside window
     document.addEventListener('mousemove', (e) => this.handleMouseMove(e));
 
     // Auto-collapse on click outside controls panel
     document.addEventListener('click', (e) => this.handleClick(e));
 
-    // Use polling to detect when mouse leaves window (more reliable for transparent windows)
-    this.startMouseTracking();
+    // Poll to detect when mouse has left (no activity = mouse left)
+    this.startInactivityDetection();
   }
 
   setElements(triggerArea, controlsPanel) {
@@ -42,59 +41,29 @@ class HoverController {
     this.controlsPanel = controlsPanel;
   }
 
-  startMouseTracking() {
-    // Poll every 100ms to check if mouse is still in window
+  startInactivityDetection() {
+    // Check every 100ms if we've stopped receiving mouse events
     setInterval(() => {
-      this.checkMousePosition();
-    }, 100);
-  }
+      const now = Date.now();
+      const timeSinceActivity = now - this.lastActivityTime;
 
-  checkMousePosition() {
-    // Get window bounds via IPC if available
-    if (window.horizon && window.horizon.getWindowBounds) {
-      window.horizon.getWindowBounds().then(bounds => {
-        if (!bounds) return;
-
-        const { x, y } = this.lastMousePosition;
-        const isInWindow = x >= 0 && x <= bounds.width && y >= 0 && y <= bounds.height;
-
-        if (isInWindow && !this.isMouseInWindow) {
-          // Mouse entered window
-          this.isMouseInWindow = true;
-          this.handleMouseEnter();
-        } else if (!isInWindow && this.isMouseInWindow) {
-          // Mouse left window
-          this.isMouseInWindow = false;
-          this.handleMouseLeave();
-        }
-      });
-    } else {
-      // Fallback: use document bounds
-      const { x, y } = this.lastMousePosition;
-      const isInWindow = x >= 0 && x <= window.innerWidth && y >= 0 && y <= window.innerHeight;
-
-      if (isInWindow && !this.isMouseInWindow) {
-        this.isMouseInWindow = true;
-        this.handleMouseEnter();
-      } else if (!isInWindow && this.isMouseInWindow) {
+      // If no mouse activity for threshold period, mouse has left
+      if (this.isMouseInWindow && timeSinceActivity > this.inactivityThreshold) {
         this.isMouseInWindow = false;
         this.handleMouseLeave();
       }
-    }
+    }, 100);
   }
 
   handleMouseMove(e) {
-    // Update last known mouse position
-    this.lastMousePosition = { x: e.clientX, y: e.clientY };
+    // Update activity timestamp
+    this.lastActivityTime = Date.now();
 
-    // Mark mouse as in window
+    // Mouse is in window (we received an event)
     if (!this.isMouseInWindow) {
       this.isMouseInWindow = true;
       this.handleMouseEnter();
     }
-
-    // Cancel any pending hide
-    this.cancelHideTimer();
 
     // Start hover timer if not already hovering
     if (!this.isHovering && !this.hoverTimeout) {
@@ -103,24 +72,21 @@ class HoverController {
   }
 
   handleMouseEnter() {
-    // Cancel any pending hide
-    this.cancelHideTimer();
-
-    // Start hover detection timer
-    this.startHoverTimer();
-
-    // Enable mouse events on the window when mouse enters
+    // Enable mouse events on the window
     if (window.horizon) {
       window.horizon.setIgnoreMouseEvents(false);
     }
+
+    // Start hover detection timer
+    this.startHoverTimer();
   }
 
   handleMouseLeave() {
     // Cancel hover timer
     this.cancelHoverTimer();
 
-    // Start hide timer (small delay to prevent flickering)
-    this.startHideTimer();
+    // Hide controls
+    this.hideControls();
 
     // Re-enable click-through when mouse leaves
     if (window.horizon) {
@@ -167,22 +133,6 @@ class HoverController {
     this.isHovering = false;
   }
 
-  startHideTimer() {
-    if (this.hideTimeout) return;
-
-    this.hideTimeout = setTimeout(() => {
-      this.hideControls();
-      this.hideTimeout = null;
-    }, this.hideDelay);
-  }
-
-  cancelHideTimer() {
-    if (this.hideTimeout) {
-      clearTimeout(this.hideTimeout);
-      this.hideTimeout = null;
-    }
-  }
-
   showControls() {
     if (this.isControlsVisible) return;
 
@@ -201,7 +151,7 @@ class HoverController {
   hideControls() {
     if (!this.isControlsVisible) return;
 
-    // Don't hide if there are open panels
+    // Don't hide if there are open panels (analytics, rating, etc.)
     const openPanels = document.querySelectorAll('.panel:not(.hidden)');
     if (openPanels.length > 0) return;
 
@@ -221,7 +171,6 @@ class HoverController {
   // Force show controls (for keyboard shortcuts, etc.)
   forceShow() {
     this.cancelHoverTimer();
-    this.cancelHideTimer();
     this.isHovering = true;
     this.showControls();
   }
@@ -229,7 +178,6 @@ class HoverController {
   // Force hide controls
   forceHide() {
     this.cancelHoverTimer();
-    this.cancelHideTimer();
     this.hideControls();
   }
 }
