@@ -8,7 +8,7 @@ This is **not** a traditional task manager or notification system. Horizon does 
 
 ## Repository Status
 
-This repository is in early development. The project will be built as a Windows desktop application.
+This repository contains a working Electron application with all core features implemented. The app is ready for testing and iteration.
 
 ## Core Features
 
@@ -50,11 +50,12 @@ This repository is in early development. The project will be built as a Windows 
 
 ## Architecture Guidelines
 
-### Technology Stack (Planned)
-- **Platform:** Windows desktop application
-- **Recommended frameworks:** Electron, Tauri, or native Windows (WPF/WinUI)
-- **Audio:** Web Audio API or native audio synthesis for brown noise
-- **Storage:** Local-first, privacy-focused (no cloud sync required)
+### Technology Stack
+- **Framework:** Electron 28.x
+- **Platform:** Windows, macOS, Linux (cross-platform)
+- **Audio:** Web Audio API for brown noise synthesis and alarms
+- **Storage:** Local JSON file storage via Electron's userData path
+- **Build:** electron-builder for packaging
 
 ### Design Principles
 
@@ -97,11 +98,20 @@ UI Background:   Dark        - #1a1a1a or similar
 git clone <repo-url>
 cd timer
 
-# Install dependencies (once package.json exists)
+# Install dependencies
 npm install
 
-# Start development server
+# Start the application
+npm start
+
+# Start in development mode (with DevTools)
 npm run dev
+
+# Run tests
+npm test
+
+# Build distributable
+npm run build
 ```
 
 ### Branch Naming
@@ -119,25 +129,45 @@ npm run dev
 - Integration tests for hotkey handling
 - Manual testing for visual/UX components
 
-## Files Structure (Planned)
+## Files Structure
 
 ```
 timer/
 ├── src/
-│   ├── main/           # Main process (Electron) or app entry
-│   ├── renderer/       # UI components
-│   │   ├── HorizonLine/    # Timeline visualization
-│   │   ├── QuickCapture/   # Brain dump overlay
-│   │   └── Analytics/      # Compassionate analytics
-│   ├── audio/          # Brown noise & alarm synthesis
-│   ├── hotkeys/        # Global hotkey registration
-│   └── storage/        # Local data persistence
+│   ├── main/
+│   │   ├── main.js         # Electron main process, window management, IPC
+│   │   ├── preload.js      # Context bridge for secure renderer communication
+│   │   └── store.js        # Local JSON file storage utility
+│   └── renderer/
+│       ├── index.html      # Main timer window
+│       ├── quick-capture.html  # Brain dump overlay window
+│       ├── app.js          # Main application logic
+│       ├── styles/
+│       │   └── main.css    # All styles with CSS variables
+│       └── components/
+│           ├── timer.js    # HorizonTimer class - timer logic
+│           ├── audio.js    # HorizonAudio class - brown noise & alarms
+│           └── hover.js    # HoverController class - ghost interaction
 ├── tests/
-├── assets/
+│   └── timer.test.js       # Unit tests for timer logic
+├── assets/                 # Icons and static assets
 ├── package.json
-├── tsconfig.json
+├── .gitignore
 └── CLAUDE.md
 ```
+
+## Key Files Reference
+
+| File | Purpose |
+|------|---------|
+| `src/main/main.js` | Electron main process - creates windows, registers global hotkeys (Alt+Space, Ctrl+J), handles IPC |
+| `src/main/preload.js` | Secure bridge between main and renderer via `window.horizon` API |
+| `src/main/store.js` | Simple JSON file storage for captures, sessions, and settings |
+| `src/renderer/app.js` | Main UI logic - connects timer, audio, and hover components |
+| `src/renderer/components/timer.js` | `HorizonTimer` class - duration, phases, bonus time tracking |
+| `src/renderer/components/audio.js` | `HorizonAudio` class - brown noise generation, psychoacoustic alarms |
+| `src/renderer/components/hover.js` | `HoverController` class - 400ms hover delay, click-through management |
+| `src/renderer/quick-capture.html` | Standalone Quick Capture window with minimal UI |
 
 ## Key Implementation Notes
 

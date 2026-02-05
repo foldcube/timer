@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+  <title>Quick Capture</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: transparent;
+      overflow: hidden;
+    }
+
+    .capture-container {
+      width: 600px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      background: rgba(26, 26, 26, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      animation: slideIn 0.15s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes slideOut {
+      from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      to {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.98);
+      }
+    }
+
+    .capture-container.closing {
+      animation: slideOut 0.15s ease-in forwards;
+    }
+
+    .capture-icon {
+      color: #00CED1;
+      font-size: 20px;
+      margin-right: 12px;
+      opacity: 0.8;
+    }
+
+    .capture-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #ffffff;
+      font-size: 16px;
+      outline: none;
+    }
+
+    .capture-input::placeholder {
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    .capture-hint {
+      color: rgba(255, 255, 255, 0.3);
+      font-size: 12px;
+      margin-left: 12px;
+    }
+
+    kbd {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 11px;
+    }
+
+    /* Success state */
+    .capture-container.success {
+      border-color: #00CED1;
+    }
+
+    .capture-container.success .capture-icon {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="capture-container" id="container">
+    <span class="capture-icon">💭</span>
+    <input
+      type="text"
+      class="capture-input"
+      id="capture-input"
+      placeholder="Capture your thought..."
+      autofocus
+    >
+    <span class="capture-hint"><kbd>Enter</kbd> to save • <kbd>Esc</kbd> to cancel</span>
+  </div>
+
+  <script>
+    const container = document.getElementById('container');
+    const input = document.getElementById('capture-input');
+
+    // Focus input immediately
+    input.focus();
+
+    // Handle keyboard
+    input.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter' && input.value.trim()) {
+        // Save capture
+        await window.horizon.saveCapture(input.value.trim());
+
+        // Show success state briefly
+        container.classList.add('success');
+        input.value = '';
+        input.placeholder = 'Captured! ✓';
+
+        // Close after brief delay
+        setTimeout(() => {
+          closeWindow();
+        }, 300);
+      } else if (e.key === 'Escape') {
+        closeWindow();
+      }
+    });
+
+    function closeWindow() {
+      container.classList.add('closing');
+      setTimeout(() => {
+        window.horizon.closeQuickCapture();
+      }, 150);
+    }
+
+    // Close on blur (clicking outside)
+    window.addEventListener('blur', () => {
+      closeWindow();
+    });
+  </script>
+</body>
+</html>

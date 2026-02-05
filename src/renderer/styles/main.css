@@ -1,0 +1,411 @@
+/* Horizon Timer - Main Styles */
+
+:root {
+  /* Color Palette */
+  --color-flow: #00CED1;        /* Teal/Cyan - 0-80% */
+  --color-transition: #FFB347;   /* Amber - 80-95% */
+  --color-crunch: #FFB6C1;       /* Soft Rose - 95-100% */
+  --color-bonus: #FFD700;        /* Gold - bonus time */
+  --color-bg-dark: #1a1a1a;
+  --color-bg-panel: rgba(26, 26, 26, 0.95);
+  --color-text: #ffffff;
+  --color-text-muted: #888888;
+
+  /* Timing */
+  --hover-delay: 400ms;
+  --transition-speed: 200ms;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: transparent;
+  overflow: hidden;
+  user-select: none;
+}
+
+#app {
+  width: 100vw;
+  height: 120px;
+  position: relative;
+}
+
+/* ===== Horizon Line ===== */
+#horizon-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: var(--color-flow);
+  transform-origin: left center;
+  transition: background-color 0.5s ease;
+  z-index: 100;
+}
+
+#horizon-line.phase-flow {
+  background: var(--color-flow);
+}
+
+#horizon-line.phase-transition {
+  background: var(--color-transition);
+}
+
+#horizon-line.phase-crunch {
+  background: var(--color-crunch);
+}
+
+#horizon-line.phase-bonus {
+  background: var(--color-bonus);
+}
+
+/* ===== Controls Panel ===== */
+#controls-panel {
+  position: absolute;
+  top: 3px;
+  left: 0;
+  width: 100%;
+  height: 117px;
+  background: var(--color-bg-panel);
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity var(--transition-speed) ease,
+              transform var(--transition-speed) ease;
+  z-index: 50;
+}
+
+#controls-panel.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+#controls-panel.hidden {
+  pointer-events: none;
+}
+
+.controls-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+  height: 100%;
+  padding: 0 20px;
+}
+
+/* ===== Timer Display ===== */
+.timer-section {
+  text-align: center;
+}
+
+.timer-display {
+  font-size: 32px;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  letter-spacing: 2px;
+}
+
+.timer-display.bonus {
+  color: var(--color-bonus);
+}
+
+.timer-label {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 4px;
+}
+
+/* ===== Buttons ===== */
+.control-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--color-text);
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all var(--transition-speed) ease;
+}
+
+.control-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.control-btn.primary {
+  background: var(--color-flow);
+  border-color: var(--color-flow);
+  color: #000;
+}
+
+.control-btn.primary:hover {
+  background: #00b8bb;
+  border-color: #00b8bb;
+}
+
+.control-btn.small {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.control-btn.hidden {
+  display: none;
+}
+
+.control-btn.active {
+  background: var(--color-flow);
+  border-color: var(--color-flow);
+}
+
+/* ===== Preset Buttons ===== */
+.preset-section {
+  display: flex;
+  gap: 8px;
+}
+
+.preset-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--color-text-muted);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all var(--transition-speed) ease;
+}
+
+.preset-btn:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  color: var(--color-text);
+}
+
+.preset-btn.active {
+  border-color: var(--color-flow);
+  color: var(--color-flow);
+}
+
+/* ===== Audio Controls ===== */
+.audio-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.volume-slider {
+  width: 80px;
+  height: 4px;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  outline: none;
+}
+
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  background: var(--color-text);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* ===== Analytics Section ===== */
+.analytics-section {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.capture-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: var(--color-flow);
+  color: #000;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+}
+
+/* ===== Panels ===== */
+.panel {
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 400px;
+  background: var(--color-bg-panel);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 200;
+}
+
+.panel.hidden {
+  display: none;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.panel-header h3 {
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  color: var(--color-text);
+}
+
+.panel-content {
+  padding: 16px;
+}
+
+.panel-content.centered {
+  text-align: center;
+}
+
+/* ===== Stats Grid ===== */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.stat-card {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 12px;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 300;
+  color: var(--color-flow);
+}
+
+.stat-label {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* ===== Captures List ===== */
+.captures-list h4 {
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.captures-list ul {
+  list-style: none;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.captures-list li {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+  margin-bottom: 4px;
+}
+
+.captures-list li:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ===== Rating Panel ===== */
+#rating-panel h3 {
+  color: var(--color-text);
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.session-summary {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.rating-stars {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.star-btn {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: color var(--transition-speed) ease,
+              transform var(--transition-speed) ease;
+}
+
+.star-btn:hover {
+  transform: scale(1.2);
+}
+
+.star-btn.active,
+.star-btn:hover {
+  color: var(--color-bonus);
+}
+
+.rating-hint {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  margin-bottom: 12px;
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}

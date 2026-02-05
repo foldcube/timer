@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+  <title>Horizon Timer</title>
+  <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Horizon Line - The pixel-thin timer bar -->
+    <div id="horizon-line"></div>
+
+    <!-- Controls Panel - Appears on hover -->
+    <div id="controls-panel" class="hidden">
+      <div class="controls-content">
+        <!-- Timer Display -->
+        <div class="timer-section">
+          <div id="timer-display" class="timer-display">25:00</div>
+          <div id="timer-label" class="timer-label">Focus Time</div>
+        </div>
+
+        <!-- Timer Controls -->
+        <div class="button-section">
+          <button id="btn-start" class="control-btn primary">Start</button>
+          <button id="btn-pause" class="control-btn hidden">Pause</button>
+          <button id="btn-reset" class="control-btn">Reset</button>
+        </div>
+
+        <!-- Duration Presets -->
+        <div class="preset-section">
+          <button class="preset-btn" data-minutes="15">15m</button>
+          <button class="preset-btn active" data-minutes="25">25m</button>
+          <button class="preset-btn" data-minutes="45">45m</button>
+          <button class="preset-btn" data-minutes="60">60m</button>
+        </div>
+
+        <!-- Audio Controls -->
+        <div class="audio-section">
+          <button id="btn-noise" class="control-btn small">
+            <span class="icon">🔇</span>
+            <span class="label">Noise</span>
+          </button>
+          <input type="range" id="noise-volume" min="0" max="100" value="30" class="volume-slider">
+        </div>
+
+        <!-- Analytics Button -->
+        <div class="analytics-section">
+          <button id="btn-analytics" class="control-btn small">
+            <span class="icon">📊</span>
+            <span class="label">Stats</span>
+          </button>
+          <div id="capture-count" class="capture-badge">0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analytics Panel -->
+    <div id="analytics-panel" class="panel hidden">
+      <div class="panel-header">
+        <h3>Session Analytics</h3>
+        <button id="close-analytics" class="close-btn">&times;</button>
+      </div>
+      <div class="panel-content">
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="stat-sessions">0</div>
+            <div class="stat-label">Sessions</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-captures">0</div>
+            <div class="stat-label">Thoughts Captured</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-rating">--</div>
+            <div class="stat-label">Avg Rating</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-week-sessions">0</div>
+            <div class="stat-label">This Week</div>
+          </div>
+        </div>
+        <div class="captures-list">
+          <h4>Recent Captures</h4>
+          <ul id="recent-captures"></ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Session End Rating -->
+    <div id="rating-panel" class="panel hidden">
+      <div class="panel-content centered">
+        <h3>Session Complete!</h3>
+        <p class="session-summary" id="session-summary">Great focus session</p>
+        <div class="rating-stars">
+          <button class="star-btn" data-rating="1">★</button>
+          <button class="star-btn" data-rating="2">★</button>
+          <button class="star-btn" data-rating="3">★</button>
+          <button class="star-btn" data-rating="4">★</button>
+          <button class="star-btn" data-rating="5">★</button>
+        </div>
+        <p class="rating-hint">Rate your focus quality (optional)</p>
+        <button id="skip-rating" class="control-btn small">Skip</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="components/timer.js"></script>
+  <script src="components/audio.js"></script>
+  <script src="components/hover.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
