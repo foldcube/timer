@@ -83,21 +83,15 @@ class HoverController {
   }
 
   handleClick(e) {
-    // Auto-collapse if clicking outside the controls panel
-    if (!this.isControlsVisible || !this.controlsPanel) return;
+    // Auto-collapse if clicking outside interactive elements
+    if (!this.isControlsVisible) return;
 
-    // Check if click is inside controls panel or any open panel
-    const panels = document.querySelectorAll('.panel:not(.hidden)');
-    let clickedInside = this.controlsPanel.contains(e.target);
+    // Check if click is on an interactive element (button, input, slider, etc.)
+    const interactiveSelectors = 'button, input, .control-btn, .preset-btn, .star-btn, .panel, [role="button"]';
+    const clickedOnInteractive = e.target.closest(interactiveSelectors);
 
-    panels.forEach(panel => {
-      if (panel.contains(e.target)) {
-        clickedInside = true;
-      }
-    });
-
-    // If clicked outside, hide controls
-    if (!clickedInside) {
+    // If clicked on empty space (not on a button/control), hide controls
+    if (!clickedOnInteractive) {
       this.cancelHoverTimer();
       this.hideControls();
     }
