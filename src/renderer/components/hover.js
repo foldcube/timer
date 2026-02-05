@@ -26,6 +26,9 @@ class HoverController {
     document.addEventListener('mouseenter', (e) => this.handleMouseEnter(e));
     document.addEventListener('mouseleave', (e) => this.handleMouseLeave(e));
     document.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+
+    // Auto-collapse on click outside controls panel
+    document.addEventListener('click', (e) => this.handleClick(e));
   }
 
   setElements(triggerArea, controlsPanel) {
@@ -58,6 +61,27 @@ class HoverController {
     // If already hovering, keep the timer active
     if (!this.isHovering && !this.hoverTimeout) {
       this.startHoverTimer();
+    }
+  }
+
+  handleClick(e) {
+    // Auto-collapse if clicking outside the controls panel
+    if (!this.isControlsVisible || !this.controlsPanel) return;
+
+    // Check if click is inside controls panel or any open panel
+    const panels = document.querySelectorAll('.panel:not(.hidden)');
+    let clickedInside = this.controlsPanel.contains(e.target);
+
+    panels.forEach(panel => {
+      if (panel.contains(e.target)) {
+        clickedInside = true;
+      }
+    });
+
+    // If clicked outside, hide controls
+    if (!clickedInside) {
+      this.cancelHoverTimer();
+      this.hideControls();
     }
   }
 

@@ -30,6 +30,10 @@
   const presetBtns = document.querySelectorAll('.preset-btn');
   const starBtns = document.querySelectorAll('.star-btn');
   const skipRating = document.getElementById('skip-rating');
+  const floatingTimer = document.getElementById('floating-timer');
+  const floatingTime = document.getElementById('floating-time');
+  const btnShowTimer = document.getElementById('btn-show-timer');
+  const timerOpacity = document.getElementById('timer-opacity');
 
   // Session tracking
   let sessionStartTime = null;
@@ -45,6 +49,16 @@
       timer.setDuration(settings.timerDuration / 60000);
       noiseVolume.value = settings.brownNoiseVolume * 100;
       audio.setVolume(settings.brownNoiseVolume * 100);
+
+      // Load floating timer settings
+      if (settings.showFloatingTimer) {
+        floatingTimer.classList.remove('hidden');
+        btnShowTimer.classList.add('active');
+      }
+      if (settings.floatingTimerOpacity !== undefined) {
+        timerOpacity.value = settings.floatingTimerOpacity * 100;
+        floatingTimer.style.opacity = settings.floatingTimerOpacity;
+      }
     }
 
     // Load capture count
@@ -135,6 +149,26 @@
       saveSettings({ brownNoiseVolume: value / 100 });
     });
 
+    // Floating timer display toggle
+    btnShowTimer.addEventListener('click', () => {
+      const isVisible = !floatingTimer.classList.contains('hidden');
+      if (isVisible) {
+        floatingTimer.classList.add('hidden');
+        btnShowTimer.classList.remove('active');
+      } else {
+        floatingTimer.classList.remove('hidden');
+        btnShowTimer.classList.add('active');
+      }
+      saveSettings({ showFloatingTimer: !isVisible });
+    });
+
+    // Floating timer opacity
+    timerOpacity.addEventListener('input', (e) => {
+      const value = parseInt(e.target.value) / 100;
+      floatingTimer.style.opacity = value;
+      saveSettings({ floatingTimerOpacity: value });
+    });
+
     // Analytics
     btnAnalytics.addEventListener('click', async () => {
       await loadAnalytics();
@@ -172,8 +206,13 @@
    * Handle timer tick - update display
    */
   function handleTimerTick(state) {
+    const timeText = timer.getRemainingFormatted();
+
     // Update timer display
-    timerDisplay.textContent = timer.getRemainingFormatted();
+    timerDisplay.textContent = timeText;
+
+    // Update floating timer display
+    floatingTime.textContent = timeText;
 
     // Update horizon line width
     const widthPercent = state.remainingPercent;
@@ -199,11 +238,14 @@
    * Handle phase change - update colors
    */
   function handlePhaseChange(phase) {
-    // Remove all phase classes
+    // Remove all phase classes from horizon line
     horizonLine.classList.remove('phase-flow', 'phase-transition', 'phase-crunch', 'phase-bonus');
-
     // Add current phase class
     horizonLine.classList.add(`phase-${phase}`);
+
+    // Update floating timer color too
+    floatingTimer.classList.remove('phase-flow', 'phase-transition', 'phase-crunch', 'phase-bonus');
+    floatingTimer.classList.add(`phase-${phase}`);
 
     console.log(`Phase changed to: ${phase}`);
   }

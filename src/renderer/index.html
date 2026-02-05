@@ -12,6 +12,11 @@
     <!-- Horizon Line - The pixel-thin timer bar -->
     <div id="horizon-line"></div>
 
+    <!-- Floating Timer Display - Always visible with adjustable transparency -->
+    <div id="floating-timer" class="floating-timer hidden">
+      <span id="floating-time">25:00</span>
+    </div>
+
     <!-- Controls Panel - Appears on hover -->
     <div id="controls-panel" class="hidden">
       <div class="controls-content">
@@ -43,6 +48,15 @@
             <span class="label">Noise</span>
           </button>
           <input type="range" id="noise-volume" min="0" max="100" value="30" class="volume-slider">
+        </div>
+
+        <!-- Display Settings -->
+        <div class="display-section">
+          <button id="btn-show-timer" class="control-btn small">
+            <span class="icon">🕐</span>
+            <span class="label">Timer</span>
+          </button>
+          <input type="range" id="timer-opacity" min="10" max="100" value="50" class="opacity-slider" title="Timer opacity">
         </div>
 
         <!-- Analytics Button -->

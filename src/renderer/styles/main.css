@@ -64,6 +64,43 @@ body {
   background: var(--color-bonus);
 }
 
+/* ===== Floating Timer Display ===== */
+.floating-timer {
+  position: absolute;
+  top: 8px;
+  right: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  background: rgba(26, 26, 26, 0.7);
+  padding: 4px 10px;
+  border-radius: 4px;
+  z-index: 90;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.floating-timer.hidden {
+  display: none;
+}
+
+.floating-timer.phase-flow {
+  color: var(--color-flow);
+}
+
+.floating-timer.phase-transition {
+  color: var(--color-transition);
+}
+
+.floating-timer.phase-crunch {
+  color: var(--color-crunch);
+}
+
+.floating-timer.phase-bonus {
+  color: var(--color-bonus);
+}
+
 /* ===== Controls Panel ===== */
 #controls-panel {
   position: absolute;
@@ -209,6 +246,31 @@ body {
 }
 
 .volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  background: var(--color-text);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* ===== Display Settings ===== */
+.display-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.opacity-slider {
+  width: 60px;
+  height: 4px;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  outline: none;
+}
+
+.opacity-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 12px;
   height: 12px;
