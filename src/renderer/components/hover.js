@@ -7,11 +7,9 @@
 class HoverController {
   constructor(options = {}) {
     this.hoverDelay = options.hoverDelay || 400; // ms
-    this.inactivityThreshold = 150; // ms - if no mouse activity, assume left
     this.hoverTimeout = null;
     this.isHovering = false;
     this.isControlsVisible = false;
-    this.lastActivityTime = 0;
     this.isMouseInWindow = false;
 
     // Callbacks
@@ -26,14 +24,16 @@ class HoverController {
   }
 
   init() {
-    // Track mouse movement - this only fires when mouse is inside window
+    // Use native mouseenter/mouseleave on document
+    // These work with Electron's setIgnoreMouseEvents(true, { forward: true })
+    document.documentElement.addEventListener('mouseenter', () => this.handleMouseEnter());
+    document.documentElement.addEventListener('mouseleave', () => this.handleMouseLeave());
+
+    // Track mouse movement for hover delay
     document.addEventListener('mousemove', (e) => this.handleMouseMove(e));
 
     // Auto-collapse on click outside controls panel
     document.addEventListener('click', (e) => this.handleClick(e));
-
-    // Poll to detect when mouse has left (no activity = mouse left)
-    this.startInactivityDetection();
   }
 
   setElements(triggerArea, controlsPanel) {
@@ -41,38 +41,11 @@ class HoverController {
     this.controlsPanel = controlsPanel;
   }
 
-  startInactivityDetection() {
-    // Check every 100ms if we've stopped receiving mouse events
-    setInterval(() => {
-      const now = Date.now();
-      const timeSinceActivity = now - this.lastActivityTime;
-
-      // If no mouse activity for threshold period, mouse has left
-      if (this.isMouseInWindow && timeSinceActivity > this.inactivityThreshold) {
-        this.isMouseInWindow = false;
-        this.handleMouseLeave();
-      }
-    }, 100);
-  }
-
-  handleMouseMove(e) {
-    // Update activity timestamp
-    this.lastActivityTime = Date.now();
-
-    // Mouse is in window (we received an event)
-    if (!this.isMouseInWindow) {
-      this.isMouseInWindow = true;
-      this.handleMouseEnter();
-    }
-
-    // Start hover timer if not already hovering
-    if (!this.isHovering && !this.hoverTimeout) {
-      this.startHoverTimer();
-    }
-  }
-
   handleMouseEnter() {
-    // Enable mouse events on the window
+    if (this.isMouseInWindow) return;
+    this.isMouseInWindow = true;
+
+    // Enable mouse events on the window (disable click-through)
     if (window.horizon) {
       window.horizon.setIgnoreMouseEvents(false);
     }
@@ -82,6 +55,9 @@ class HoverController {
   }
 
   handleMouseLeave() {
+    if (!this.isMouseInWindow) return;
+    this.isMouseInWindow = false;
+
     // Cancel hover timer
     this.cancelHoverTimer();
 
@@ -91,6 +67,18 @@ class HoverController {
     // Re-enable click-through when mouse leaves
     if (window.horizon) {
       window.horizon.setIgnoreMouseEvents(true, { forward: true });
+    }
+  }
+
+  handleMouseMove(e) {
+    // If we get a mousemove but isMouseInWindow is false, mouse must have entered
+    if (!this.isMouseInWindow) {
+      this.handleMouseEnter();
+    }
+
+    // Restart hover timer if not already showing controls
+    if (!this.isHovering && !this.hoverTimeout) {
+      this.startHoverTimer();
     }
   }
 
