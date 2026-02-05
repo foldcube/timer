@@ -1,14 +1,19 @@
 /**
  * Hover Detection Module
  * Handles the 400ms hover delay for ghost interaction
+ * Works across multiple monitors with transparent Electron windows
  */
 
 class HoverController {
   constructor(options = {}) {
     this.hoverDelay = options.hoverDelay || 400; // ms
+    this.hideDelay = options.hideDelay || 200; // ms - delay before hiding after mouse leaves
     this.hoverTimeout = null;
+    this.hideTimeout = null;
     this.isHovering = false;
     this.isControlsVisible = false;
+    this.lastMousePosition = { x: 0, y: 0 };
+    this.isMouseInWindow = false;
 
     // Callbacks
     this.onHoverStart = options.onHoverStart || null;
@@ -22,13 +27,14 @@ class HoverController {
   }
 
   init() {
-    // The entire app acts as a hover detection area
-    document.addEventListener('mouseenter', (e) => this.handleMouseEnter(e));
-    document.addEventListener('mouseleave', (e) => this.handleMouseLeave(e));
+    // Track mouse movement
     document.addEventListener('mousemove', (e) => this.handleMouseMove(e));
 
     // Auto-collapse on click outside controls panel
     document.addEventListener('click', (e) => this.handleClick(e));
+
+    // Use polling to detect when mouse leaves window (more reliable for transparent windows)
+    this.startMouseTracking();
   }
 
   setElements(triggerArea, controlsPanel) {
@@ -36,7 +42,70 @@ class HoverController {
     this.controlsPanel = controlsPanel;
   }
 
-  handleMouseEnter(e) {
+  startMouseTracking() {
+    // Poll every 100ms to check if mouse is still in window
+    setInterval(() => {
+      this.checkMousePosition();
+    }, 100);
+  }
+
+  checkMousePosition() {
+    // Get window bounds via IPC if available
+    if (window.horizon && window.horizon.getWindowBounds) {
+      window.horizon.getWindowBounds().then(bounds => {
+        if (!bounds) return;
+
+        const { x, y } = this.lastMousePosition;
+        const isInWindow = x >= 0 && x <= bounds.width && y >= 0 && y <= bounds.height;
+
+        if (isInWindow && !this.isMouseInWindow) {
+          // Mouse entered window
+          this.isMouseInWindow = true;
+          this.handleMouseEnter();
+        } else if (!isInWindow && this.isMouseInWindow) {
+          // Mouse left window
+          this.isMouseInWindow = false;
+          this.handleMouseLeave();
+        }
+      });
+    } else {
+      // Fallback: use document bounds
+      const { x, y } = this.lastMousePosition;
+      const isInWindow = x >= 0 && x <= window.innerWidth && y >= 0 && y <= window.innerHeight;
+
+      if (isInWindow && !this.isMouseInWindow) {
+        this.isMouseInWindow = true;
+        this.handleMouseEnter();
+      } else if (!isInWindow && this.isMouseInWindow) {
+        this.isMouseInWindow = false;
+        this.handleMouseLeave();
+      }
+    }
+  }
+
+  handleMouseMove(e) {
+    // Update last known mouse position
+    this.lastMousePosition = { x: e.clientX, y: e.clientY };
+
+    // Mark mouse as in window
+    if (!this.isMouseInWindow) {
+      this.isMouseInWindow = true;
+      this.handleMouseEnter();
+    }
+
+    // Cancel any pending hide
+    this.cancelHideTimer();
+
+    // Start hover timer if not already hovering
+    if (!this.isHovering && !this.hoverTimeout) {
+      this.startHoverTimer();
+    }
+  }
+
+  handleMouseEnter() {
+    // Cancel any pending hide
+    this.cancelHideTimer();
+
     // Start hover detection timer
     this.startHoverTimer();
 
@@ -46,21 +115,16 @@ class HoverController {
     }
   }
 
-  handleMouseLeave(e) {
-    // Cancel hover timer and hide controls
+  handleMouseLeave() {
+    // Cancel hover timer
     this.cancelHoverTimer();
-    this.hideControls();
+
+    // Start hide timer (small delay to prevent flickering)
+    this.startHideTimer();
 
     // Re-enable click-through when mouse leaves
     if (window.horizon) {
       window.horizon.setIgnoreMouseEvents(true, { forward: true });
-    }
-  }
-
-  handleMouseMove(e) {
-    // If already hovering, keep the timer active
-    if (!this.isHovering && !this.hoverTimeout) {
-      this.startHoverTimer();
     }
   }
 
@@ -103,6 +167,22 @@ class HoverController {
     this.isHovering = false;
   }
 
+  startHideTimer() {
+    if (this.hideTimeout) return;
+
+    this.hideTimeout = setTimeout(() => {
+      this.hideControls();
+      this.hideTimeout = null;
+    }, this.hideDelay);
+  }
+
+  cancelHideTimer() {
+    if (this.hideTimeout) {
+      clearTimeout(this.hideTimeout);
+      this.hideTimeout = null;
+    }
+  }
+
   showControls() {
     if (this.isControlsVisible) return;
 
@@ -121,7 +201,12 @@ class HoverController {
   hideControls() {
     if (!this.isControlsVisible) return;
 
+    // Don't hide if there are open panels
+    const openPanels = document.querySelectorAll('.panel:not(.hidden)');
+    if (openPanels.length > 0) return;
+
     this.isControlsVisible = false;
+    this.isHovering = false;
 
     if (this.controlsPanel) {
       this.controlsPanel.classList.remove('visible');
@@ -136,6 +221,7 @@ class HoverController {
   // Force show controls (for keyboard shortcuts, etc.)
   forceShow() {
     this.cancelHoverTimer();
+    this.cancelHideTimer();
     this.isHovering = true;
     this.showControls();
   }
@@ -143,6 +229,7 @@ class HoverController {
   // Force hide controls
   forceHide() {
     this.cancelHoverTimer();
+    this.cancelHideTimer();
     this.hideControls();
   }
 }

@@ -22,14 +22,26 @@ let mainWindow = null;
 let quickCaptureWindow = null;
 
 function createMainWindow() {
-  const primaryDisplay = screen.getPrimaryDisplay();
-  const { width } = primaryDisplay.workAreaSize;
+  // Get all displays and calculate combined bounds for multi-monitor support
+  const displays = screen.getAllDisplays();
+  let minX = Infinity, minY = Infinity, maxX = -Infinity;
+
+  displays.forEach(display => {
+    const { x, y, width } = display.bounds;
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x + width);
+  });
+
+  // Create window spanning all displays at the top
+  const totalWidth = maxX - minX;
+  const windowHeight = 120; // Small height for the horizon line + controls
 
   mainWindow = new BrowserWindow({
-    width: width,
-    height: 120, // Small height for the horizon line + controls
-    x: 0,
-    y: 0,
+    width: totalWidth,
+    height: windowHeight,
+    x: minX,
+    y: minY,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
@@ -180,6 +192,13 @@ ipcMain.on('close-quick-capture', () => {
   if (quickCaptureWindow && !quickCaptureWindow.isDestroyed()) {
     quickCaptureWindow.close();
   }
+});
+
+ipcMain.handle('get-window-bounds', () => {
+  if (mainWindow) {
+    return mainWindow.getBounds();
+  }
+  return null;
 });
 
 // App lifecycle

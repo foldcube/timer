@@ -6,6 +6,9 @@ contextBridge.exposeInMainWorld('horizon', {
     ipcRenderer.send('set-ignore-mouse-events', ignore, options);
   },
 
+  // Window bounds for hover detection
+  getWindowBounds: () => ipcRenderer.invoke('get-window-bounds'),
+
   // Settings
   getSettings: () => ipcRenderer.invoke('get-settings'),
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
