@@ -14,6 +14,14 @@ class HorizonTimer {
     this.intervalId = null;
     this.bonusTime = 0;
 
+    // Pause tracking for session metrics
+    this.pauseCount = 0;
+    this.totalPauseTime = 0;
+
+    // Cycle tracking for continuous back-and-forth
+    this.cycleNumber = 0;
+    this.totalElapsed = 0;
+
     // Phase thresholds (percentage of time elapsed)
     this.phases = {
       flow: { min: 0, max: 80 },      // 0-80% elapsed = flow (teal)
@@ -26,6 +34,7 @@ class HorizonTimer {
     this.onPhaseChange = null;
     this.onComplete = null;
     this.onBonusTick = null;
+    this.onCycleChange = null;
 
     this.currentPhase = 'flow';
   }
@@ -46,6 +55,7 @@ class HorizonTimer {
       // Resume from pause
       const pauseDuration = Date.now() - this.pausedAt;
       this.startTime += pauseDuration;
+      this.totalPauseTime += pauseDuration;
       this.isPaused = false;
       this.pausedAt = null;
     } else {
@@ -53,6 +63,8 @@ class HorizonTimer {
       this.startTime = Date.now();
       this.remaining = this.duration;
       this.bonusTime = 0;
+      this.pauseCount = 0;
+      this.totalPauseTime = 0;
     }
 
     this.isRunning = true;
@@ -65,6 +77,7 @@ class HorizonTimer {
 
     this.isPaused = true;
     this.pausedAt = Date.now();
+    this.pauseCount++;
     clearInterval(this.intervalId);
     this.intervalId = null;
   }
@@ -97,25 +110,30 @@ class HorizonTimer {
 
     const elapsed = Date.now() - this.startTime;
     this.remaining = this.duration - elapsed;
+    this.totalElapsed = (this.cycleNumber * this.duration) + elapsed;
 
     if (this.remaining <= 0) {
-      // Timer complete - start counting bonus time
-      this.bonusTime = Math.abs(this.remaining);
-      this.remaining = 0;
-
-      const newPhase = 'bonus';
-      if (this.currentPhase !== newPhase) {
-        this.currentPhase = newPhase;
-        if (this.onPhaseChange) {
-          this.onPhaseChange(newPhase);
-        }
-        if (this.onComplete) {
-          this.onComplete(this.getState());
-        }
+      // Cycle complete - start next cycle
+      this.cycleNumber++;
+      
+      // Reset start time for next cycle
+      this.startTime = Date.now();
+      this.remaining = this.duration;
+      
+      // Reset to flow phase
+      this.currentPhase = 'flow';
+      if (this.onPhaseChange) {
+        this.onPhaseChange('flow');
       }
-
-      if (this.onBonusTick) {
-        this.onBonusTick(this.getState());
+      
+      // Trigger completion callback
+      if (this.onComplete) {
+        this.onComplete(this.getState());
+      }
+      
+      // Trigger cycle change callback
+      if (this.onCycleChange) {
+        this.onCycleChange(this.cycleNumber);
       }
     } else {
       // Calculate phase based on elapsed percentage
@@ -154,7 +172,19 @@ class HorizonTimer {
       phase: this.currentPhase,
       isRunning: this.isRunning,
       isPaused: this.isPaused,
-      isBonus: this.bonusTime > 0
+      isBonus: this.bonusTime > 0,
+      cycleNumber: this.cycleNumber,
+      totalElapsed: this.totalElapsed,
+      isReversed: this.cycleNumber % 2 === 1 // Odd cycles go left-to-right
+    };
+  }
+
+  getSessionMetrics() {
+    return {
+      pauseCount: this.pauseCount,
+      totalPauseTime: this.totalPauseTime,
+      hadPause: this.pauseCount > 0,
+      wasSuccessful: this.pauseCount === 0 && this.bonusTime >= 0
     };
   }
 
@@ -170,6 +200,10 @@ class HorizonTimer {
       return '+' + this.formatTime(this.bonusTime);
     }
     return this.formatTime(this.remaining);
+  }
+
+  getTotalElapsedFormatted() {
+    return this.formatTime(this.totalElapsed);
   }
 }
 

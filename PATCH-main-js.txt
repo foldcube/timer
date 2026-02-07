@@ -1,0 +1,18 @@
+// Add these IPC handlers to main.js after line 218 (after get-analytics handler)
+
+// New session analytics handlers
+ipcMain.handle('save-session-analytics', (event, sessionData) => {
+  return store.saveSessionData(sessionData);
+});
+
+ipcMain.handle('get-all-sessions', () => {
+  return store.getAllSessions();
+});
+
+ipcMain.handle('get-sessions-by-date-range', (event, startDate, endDate) => {
+  return store.getSessionsByDateRange(startDate, endDate);
+});
+
+ipcMain.handle('export-sessions', (event, format) => {
+  return store.exportSessions(format);
+});

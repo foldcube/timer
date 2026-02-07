@@ -1,0 +1,38 @@
+// CORRECTED ANALYTICS SECTION FOR app.js (lines 309-340)
+// Replace lines 309-340 in src/renderer/app.js with this:
+
+    // Analytics
+    btnAnalytics.addEventListener('click', async () => {
+      try {
+        await analyticsDashboard.loadDashboard();
+        analyticsPanel.classList.remove('hidden');
+      } catch (error) {
+        console.error('Error loading analytics:', error);
+        alert('Error loading analytics. Check console for details.');
+      }
+    });
+
+    closeAnalytics.addEventListener('click', () => {
+      analyticsPanel.classList.add('hidden');
+    });
+
+    // Export data button
+    if (btnExportData) {
+      btnExportData.addEventListener('click', async () => {
+        await analyticsDashboard.exportData('csv');
+      });
+    }
+
+    // Period filter
+    if (filterPeriod) {
+      filterPeriod.addEventListener('change', (e) => {
+        analyticsDashboard.filterByPeriod(e.target.value);
+      });
+    }
+
+    // Success filter
+    if (filterSuccess) {
+      filterSuccess.addEventListener('change', (e) => {
+        analyticsDashboard.filterBySuccess(e.target.value);
+      });
+    }

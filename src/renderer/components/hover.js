@@ -7,7 +7,9 @@
 class HoverController {
   constructor(options = {}) {
     this.hoverDelay = options.hoverDelay || 400; // ms
+    this.hideDelay = options.hideDelay || 300; // ms grace period before hiding
     this.hoverTimeout = null;
+    this.hideTimeout = null;
     this.isHovering = false;
     this.isControlsVisible = false;
     this.isMouseInWindow = false;
@@ -24,21 +26,44 @@ class HoverController {
   }
 
   init() {
-    // Use native mouseenter/mouseleave on document
-    // These work with Electron's setIgnoreMouseEvents(true, { forward: true })
-    document.documentElement.addEventListener('mouseenter', () => this.handleMouseEnter());
-    document.documentElement.addEventListener('mouseleave', () => this.handleMouseLeave());
-
-    // Track mouse movement for hover delay
-    document.addEventListener('mousemove', (e) => this.handleMouseMove(e));
-
-    // Auto-collapse on click outside controls panel
+    // Click handler on document for collapse/expand functionality
     document.addEventListener('click', (e) => this.handleClick(e));
   }
 
   setElements(triggerArea, controlsPanel) {
     this.triggerArea = triggerArea;
     this.controlsPanel = controlsPanel;
+
+    // Set up hover detection only on the horizon line (3px active area)
+    if (this.triggerArea) {
+      this.triggerArea.addEventListener('mouseenter', () => this.handleMouseEnter());
+      this.triggerArea.addEventListener('mouseleave', () => this.handleMouseLeave());
+      
+      // Direct click handler on horizon line for reliable detection
+      this.triggerArea.addEventListener('click', (e) => {
+        console.log('Horizon line clicked!');
+        e.stopPropagation(); // Prevent document click handler from also firing
+        
+        if (!this.isControlsVisible) {
+          this.showControls();
+        } else {
+          this.hideControls();
+        }
+      });
+    }
+
+    // Also detect when mouse enters/leaves controls panel to keep it visible
+    if (this.controlsPanel) {
+      this.controlsPanel.addEventListener('mouseenter', () => {
+        this.isMouseInWindow = true;
+        this.cancelHoverTimer();
+        this.cancelHideTimer(); // Cancel any pending hide when entering controls
+      });
+      this.controlsPanel.addEventListener('mouseleave', () => {
+        this.isMouseInWindow = false;
+        this.startHideTimer(); // Delayed hide when leaving controls
+      });
+    }
   }
 
   handleMouseEnter() {
@@ -50,8 +75,8 @@ class HoverController {
       window.horizon.setIgnoreMouseEvents(false);
     }
 
-    // Start hover detection timer
-    this.startHoverTimer();
+    // Note: Removed auto-show on hover to prevent accidental display
+    // Menu now only shows on click
   }
 
   handleMouseLeave() {
@@ -61,36 +86,59 @@ class HoverController {
     // Cancel hover timer
     this.cancelHoverTimer();
 
-    // Hide controls
-    this.hideControls();
-
-    // Re-enable click-through when mouse leaves
-    if (window.horizon) {
-      window.horizon.setIgnoreMouseEvents(true, { forward: true });
-    }
-  }
-
-  handleMouseMove(e) {
-    // If we get a mousemove but isMouseInWindow is false, mouse must have entered
-    if (!this.isMouseInWindow) {
-      this.handleMouseEnter();
-    }
-
-    // Restart hover timer if not already showing controls
-    if (!this.isHovering && !this.hoverTimeout) {
-      this.startHoverTimer();
-    }
+    // Start delayed hide (grace period to move to controls panel)
+    this.startHideTimer();
+    
+    // Note: Don't re-enable click-through here - wait until controls actually hide
   }
 
   handleClick(e) {
-    // Auto-collapse if clicking outside interactive elements
-    if (!this.isControlsVisible) return;
+    // Check if analytics panel is open
+    const analyticsPanel = document.getElementById('analytics-panel');
+    if (analyticsPanel && !analyticsPanel.classList.contains('hidden')) {
+      // Check if click is inside the analytics panel
+      const clickedInPanel = e.target.closest('#analytics-panel');
+      if (!clickedInPanel) {
+        // Click was outside analytics panel, close it
+        analyticsPanel.classList.add('hidden');
+        return;
+      }
+    }
+
+    // Check if rating panel is open
+    const ratingPanel = document.getElementById('rating-panel');
+    if (ratingPanel && !ratingPanel.classList.contains('hidden')) {
+      // Check if click is inside the rating panel
+      const clickedInRatingPanel = e.target.closest('#rating-panel');
+      if (!clickedInRatingPanel) {
+        // Don't close rating panel on outside clicks - user must rate or skip
+        return;
+      }
+    }
+
+    // Check if click is on timer-related elements
+    const timerElements = '#horizon-line, #controls-panel, .panel, #floating-timer';
+    const clickedOnTimer = e.target.closest(timerElements);
+    
+    // Ignore clicks that aren't on timer elements (they're for other apps)
+    if (!clickedOnTimer) {
+      return;
+    }
 
     // Check if click is on an interactive element (button, input, slider, etc.)
     const interactiveSelectors = 'button, input, .control-btn, .preset-btn, .star-btn, .panel, [role="button"]';
     const clickedOnInteractive = e.target.closest(interactiveSelectors);
 
-    // If clicked on empty space (not on a button/control), hide controls
+    // If controls are hidden, show them immediately when clicking on horizon line
+    if (!this.isControlsVisible) {
+      this.cancelHoverTimer();
+      this.cancelHideTimer();
+      this.isHovering = true;
+      this.showControls();
+      return;
+    }
+
+    // If controls are visible and clicked on empty space (not on a button/control), hide controls
     if (!clickedOnInteractive) {
       this.cancelHoverTimer();
       this.hideControls();
@@ -115,8 +163,33 @@ class HoverController {
     this.isHovering = false;
   }
 
+  startHideTimer() {
+    // Cancel any existing hide timer
+    this.cancelHideTimer();
+
+    this.hideTimeout = setTimeout(() => {
+      this.hideControls();
+      this.hideTimeout = null;
+    }, this.hideDelay);
+  }
+
+  cancelHideTimer() {
+    if (this.hideTimeout) {
+      clearTimeout(this.hideTimeout);
+      this.hideTimeout = null;
+    }
+  }
+
   showControls() {
     if (this.isControlsVisible) return;
+
+    // Cancel any pending hide when showing controls
+    this.cancelHideTimer();
+
+    // Ensure mouse events are enabled for the window
+    if (window.horizon) {
+      window.horizon.setIgnoreMouseEvents(false);
+    }
 
     this.isControlsVisible = true;
 
@@ -133,16 +206,17 @@ class HoverController {
   hideControls() {
     if (!this.isControlsVisible) return;
 
-    // Don't hide if there are open panels (analytics, rating, etc.)
-    const openPanels = document.querySelectorAll('.panel:not(.hidden)');
-    if (openPanels.length > 0) return;
-
     this.isControlsVisible = false;
     this.isHovering = false;
 
     if (this.controlsPanel) {
       this.controlsPanel.classList.remove('visible');
       this.controlsPanel.classList.add('hidden');
+    }
+
+    // Re-enable click-through when controls are hidden
+    if (window.horizon) {
+      window.horizon.setIgnoreMouseEvents(true, { forward: true });
     }
 
     if (this.onHoverEnd) {

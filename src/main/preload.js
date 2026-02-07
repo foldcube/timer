@@ -8,6 +8,8 @@ contextBridge.exposeInMainWorld('horizon', {
 
   // Window bounds for hover detection
   getWindowBounds: () => ipcRenderer.invoke('get-window-bounds'),
+  getDisplayInfo: () => ipcRenderer.invoke('get-display-info'),
+  setWindowHeight: (height) => ipcRenderer.invoke('set-window-height', height),
 
   // Settings
   getSettings: () => ipcRenderer.invoke('get-settings'),
@@ -23,5 +25,22 @@ contextBridge.exposeInMainWorld('horizon', {
   getSessions: () => ipcRenderer.invoke('get-sessions'),
 
   // Analytics
-  getAnalytics: () => ipcRenderer.invoke('get-analytics')
+  getAnalytics: () => ipcRenderer.invoke('get-analytics'),
+// Add these methods to the contextBridge in preload.js (after line 26, in the analytics section)
+
+  // Session Analytics
+  saveSessionAnalytics: (sessionData) => ipcRenderer.invoke('save-session-analytics', sessionData),
+  getAllSessions: () => ipcRenderer.invoke('get-all-sessions'),
+  getSessionsByDateRange: (startDate, endDate) => ipcRenderer.invoke('get-sessions-by-date-range', startDate, endDate),
+  exportSessions: (format) => ipcRenderer.invoke('export-sessions', format),
+
+  // Display mode
+  setDisplayMode: (mode) => ipcRenderer.invoke('set-display-mode', mode),
+  onDisplayModeChanged: (callback) => {
+    ipcRenderer.on('display-mode-changed', (event, mode) => callback(mode));
+  },
+
+  // Auto-start
+  setAutoStart: (enabled) => ipcRenderer.invoke('set-auto-start', enabled),
+  getAutoStart: () => ipcRenderer.invoke('get-auto-start')
 });

@@ -10,9 +10,10 @@ class HorizonAudio {
     this.gainNode = null;
     this.isPlaying = false;
     this.volume = 0.3;
+    this.alarmVolume = 0.5; // Alarm/notification volume
 
     // Alarm settings
-    this.alarmDuration = 15000; // 15 second fade-in
+    this.alarmDuration = 15000; // 15 second fade-in (deprecated)
   }
 
   initContext() {
@@ -116,8 +117,7 @@ class HorizonAudio {
   }
 
   /**
-   * Psychoacoustic alarm - gentle sine wave fade-in
-   * Uses slow attack envelope to avoid startling the user
+   * Simple alarm - quick pop notification  
    */
   playAlarm() {
     const ctx = this.initContext();
@@ -126,39 +126,34 @@ class HorizonAudio {
       ctx.resume();
     }
 
-    // Create oscillator for gentle sine wave
     const oscillator = ctx.createOscillator();
     oscillator.type = 'sine';
-    oscillator.frequency.value = 432; // A4 at 432Hz - slightly warmer
+    oscillator.frequency.value = 880; // A5 - bright but not harsh
 
-    // Create gain for fade-in envelope
-    const alarmGain = ctx.createGain();
-    alarmGain.gain.value = 0;
+    const gain = ctx.createGain();
+    gain.gain.value = 0;
 
-    // Connect
-    oscillator.connect(alarmGain);
-    alarmGain.connect(ctx.destination);
-
-    // Slow attack envelope (10-15 seconds)
-    const attackTime = 12; // seconds
-    const sustainTime = 3;
-    const releaseTime = 2;
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
 
     const now = ctx.currentTime;
-    alarmGain.gain.setValueAtTime(0, now);
-    alarmGain.gain.linearRampToValueAtTime(0.15, now + attackTime);
-    alarmGain.gain.setValueAtTime(0.15, now + attackTime + sustainTime);
-    alarmGain.gain.exponentialRampToValueAtTime(0.001, now + attackTime + sustainTime + releaseTime);
+    // Quick attack and decay for "pop" sound
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(this.alarmVolume, now + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
 
-    // Start and stop
     oscillator.start(now);
-    oscillator.stop(now + attackTime + sustainTime + releaseTime + 0.1);
+    oscillator.stop(now + 0.6);
 
-    // Cleanup
     oscillator.onended = () => {
       oscillator.disconnect();
-      alarmGain.disconnect();
+      gain.disconnect();
     };
+  }
+
+  setAlarmVolume(value) {
+    // value: 0-100
+    this.alarmVolume = value / 100;
   }
 
   /**

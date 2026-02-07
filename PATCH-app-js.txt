@@ -1,0 +1,49 @@
+// Add this code to app.js to wire up the analytics dashboard
+
+// STEP 1: After line 14 where analyticsEngine is created, add:
+const analyticsDashboard = new AnalyticsDashboard(analyticsEngine);
+
+// STEP 2: In bindEvents() function, replace the the btnAnalytics click handler (around line 310):
+// REPLACE THIS:
+btnAnalytics.addEventListener('click', async () => {
+  await loadAnalytics();
+  analyticsPanel.classList.remove('hidden');
+});
+
+// WITH THIS:
+btnAnalytics.addEventListener('click', async () => {
+  try {
+    await analyticsDashboard.loadDashboard();
+    analyticsPanel.classList.remove('hidden');
+  } catch (error) {
+    console.error('Error loading analytics:', error);
+    alert('Error loading analytics. Check console for details.');
+  }
+});
+
+// STEP 3: Add these new event handlers in bindEvents() after the analytics button handler:
+
+// Export data button
+if (btnExportData) {
+  btnExportData.addEventListener('click', async () => {
+    try {
+      await analyticsDashboard.exportData('csv');
+    } catch (error) {
+      console.error('Export error:', error);
+    }
+  });
+}
+
+// Period filter
+if (filterPeriod) {
+  filterPeriod.addEventListener('change', (e) => {
+    analyticsDashboard.filterByPeriod(e.target.value);
+  });
+}
+
+// Success filter
+if (filterSuccess) {
+  filterSuccess.addEventListener('change', (e) => {
+    analyticsDashboard.filterBySuccess(e.target.value);
+  });
+}
